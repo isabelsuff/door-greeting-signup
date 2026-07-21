@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -358,7 +357,7 @@
         const dateStr = formatDateStr(d);
         const shiftId = `${dateStr}_${config.startTime.replace(':', '')}`;
         candidateIds.push(shiftId);
-        candidateData[shiftId] = { date: dateStr, startTime: config.startTime, endTime, topic: '', signups: [] };
+        candidateData[shiftId] = { date: dateStr, startTime: config.startTime, endTime, topic: '', signups: [], active: 1 };
       }
 
       if (candidateIds.length === 0) return;
@@ -387,7 +386,10 @@
 
     async function refreshMentors() {
       try {
-        const resp = await publicDB.performQuery({ recordType: 'Mentor' });
+        const resp = await publicDB.performQuery({
+          recordType: 'Mentor',
+          filterBy: [{ fieldName: 'active', comparator: 'EQUALS', fieldValue: { value: 1 } }]
+        });
         mentors = (resp.records || []).map(r => fieldVal(r, 'name', null)).filter(Boolean).sort();
         populateMentorSelect();
         render();
@@ -405,6 +407,7 @@
         const todayStr = formatDateStr(new Date());
         const resp = await publicDB.performQuery({
           recordType: 'Shift',
+          filterBy: [{ fieldName: 'active', comparator: 'EQUALS', fieldValue: { value: 1 } }],
           sortBy: [{ fieldName: 'date', ascending: true }, { fieldName: 'startTime', ascending: true }]
         });
         shifts = (resp.records || [])
@@ -499,7 +502,7 @@
       const recordName = slugify(name);
       const existing = await lookupOne(recordName);
       if (existing) throw new Error('That name is already on the list.');
-      await publicDB.saveRecords([ckRecord('Mentor', recordName, { name })]);
+      await publicDB.saveRecords([ckRecord('Mentor', recordName, { name, active: 1 })]);
     }
 
     // ---------------- Rendering ----------------
