@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Door Greeting Signup</title>
+<style>
+  :root {
+    --brand: #4f46e5;
+    --brand-light: #eef2ff;
+    --green: #16a34a;
+    --green-light: #f0fdf4;
+    --gray: #6b7280;
+    --border: #e5e7eb;
+    --bg: #f9fafb;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg);
+    margin: 0;
+    padding: 0;
+    color: #111827;
+  }
+  header {
+    background: white;
+    border-bottom: 1px solid var(--border);
+    padding: 20px 24px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  header h1 { margin: 0 0 4px 0; font-size: 20px; }
+  header p { margin: 0; color: var(--gray); font-size: 14px; }
+  .whoami {
+    max-width: 900px;
+    margin: 16px auto 0;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  select, input[type=text] {
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+  }
+  button {
+    cursor: pointer;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .btn-primary { background: var(--brand); color: white; }
+  .btn-primary:hover { background: #4338ca; }
+  .btn-secondary { background: white; color: var(--gray); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: #f3f4f6; }
+  .btn-danger { background: #fee2e2; color: #b91c1c; }
+  .btn-danger:hover { background: #fecaca; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  main { max-width: 900px; margin: 0 auto; padding: 20px 24px 60px; }
+  .my-shifts-banner {
+    background: var(--green-light);
+    border: 1px solid #bbf7d0;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    display: none;
+  }
+  .my-shifts-banner.show { display: block; }
+  .my-shifts-banner strong { color: var(--green); }
+
+  .week-label {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--gray);
+    margin: 24px 0 10px;
+  }
+  .week-label:first-child { margin-top: 0; }
+
+  .shift-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .shift-card.mine { border-color: var(--green); background: var(--green-light); }
+  .shift-card.full { opacity: 0.85; }
+
+  .shift-info { flex: 1; min-width: 220px; }
+  .shift-date { font-weight: 700; font-size: 15px; }
+  .shift-time { color: var(--gray); font-size: 13px; margin-top: 2px; }
+
+  .slots { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .slot {
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--brand-light);
+    color: var(--brand);
+    font-weight: 600;
+  }
+  .slot.open { background: #f3f4f6; color: var(--gray); font-weight: 500; }
+  .slot.me { background: var(--green); color: white; }
+
+  .topic-row { margin-top: 10px; display: flex; align-items: center; gap: 6px; font-size: 13px; }
+  .topic-row input { flex: 1; min-width: 160px; font-size: 13px; padding: 5px 8px; }
+  .topic-label { color: var(--gray); white-space: nowrap; }
+
+  .shift-actions { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+
+  .empty-state { text-align: center; color: var(--gray); padding: 40px 20px; }
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #111827;
+    color: white;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 14px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 100;
+  }
+  .toast.show { opacity: 1; }
+  .toast.error { background: #b91c1c; }
+
+  .add-mentor { margin-top: 6px; font-size: 13px; }
+  .add-mentor a { color: var(--brand); cursor: pointer; text-decoration: underline; }
+  .loading { text-align: center; padding: 60px 20px; color: var(--gray); }
+  .config-warning {
+    max-width: 900px; margin: 16px auto; padding: 12px 16px;
+    background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px;
+    font-size: 13px; color: #92400e;
+  }
+</style>
+</head>
+<body>
+
+  <header>
+    <h1>🚪 Door Greeting Signup</h1>
+    <p>Sign up for a shift, see who's on the door, and set the "this or that" topic.</p>
+    <div class="whoami">
+      <button class="btn-primary" id="signInBtn" style="display:none;">🍎 Sign in with Apple ID</button>
+      <span id="authStatus" style="font-size:13px; color: var(--gray);"></span>
+      <button class="btn-secondary" id="refreshBtn" style="margin-left:auto;">↻ Refresh</button>
+    </div>
+    <div class="whoami" style="margin-top:6px;">
+      <span style="font-size:14px; color: var(--gray);">I am:</span>
+      <select id="mentorSelect"><option value="">Loading…</option></select>
+      <span class="add-mentor" id="addMentorRow">Not on the list? <a id="addMentorLink">Add your name</a></span>
+    </div>
+    <div class="whoami" style="margin-top:6px;">
+      <span id="lastSynced" style="font-size:12px; color: var(--gray);"></span>
+    </div>
+  </header>
+
+  <main>
+    <div id="configWarning" class="config-warning" style="display:none;"></div>
+    <div class="my-shifts-banner" id="myShiftsBanner"></div>
+    <div id="content" class="loading">Loading shifts…</div>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="https://cdn.apple-cloudkit.com/ck/2/cloudkit.js"></script>
+  <script>
+    // ---------------------------------------------------------------
+    // 1. PASTE YOUR CLOUDKIT CONTAINER + API TOKEN HERE.
+    //    Get these from CloudKit Dashboard (icloud.developer.apple.com)
+    //    after creating your container. See DEPLOY_INSTRUCTIONS.md.
+    //    The API token is safe to be public here — it's restricted to
+    //    the web origin(s) you allow in CloudKit Dashboard, and actual
+    //    access is governed by the Security Roles you set on the
+    //    public database (see firestore.rules-equivalent notes in the
+    //    deploy guide).
+    // ---------------------------------------------------------------
+    const CLOUDKIT_CONTAINER_ID = 'iCloud.com.isabel.doorgreeting';
+    const CLOUDKIT_API_TOKEN = '17c7f5422d7a5bd8f3311d1cdbeb85d8700ab4729d4c2944a8eda5f74881bde3';
+    const CLOUDKIT_ENVIRONMENT = 'development'; // switch to 'production' after Deploy Schema Changes + testing
+
+    // CloudKit JS has no cross-browser real-time push, so this app
+    // polls on an interval and refreshes immediately after any write.
+    const POLL_MS = 20000;
+
+    const DAY_CODES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const DEFAULT_CONFIG = {
+      startTime: '08:00',
+      durationMinutes: 10,
+      mentorsPerShift: 2,
+      days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+      weeksAhead: 4
+    };
+
+    let container, publicDB;
+    let config = DEFAULT_CONFIG;
+    let mentors = [];
+    let shifts = [];
+    let currentMentor = localStorage.getItem('doorGreetingMentor') || '';
+    let isSignedIn = false;
+
+    function showToast(msg, isError) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'toast show' + (isError ? ' error' : '');
+      setTimeout(() => { t.className = 'toast'; }, 2800);
+    }
+
+    function fmtDate(dateStr) {
+      const d = new Date(dateStr + 'T00:00:00');
+      return d.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+    }
+
+    function fmtTime(t) {
+      const [h, m] = t.split(':').map(Number);
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const h12 = h % 12 === 0 ? 12 : h % 12;
+      return h12 + ':' + (m < 10 ? '0' : '') + m + ' ' + ampm;
+    }
+
+    function weekLabelFor(dateStr) {
+      const d = new Date(dateStr + 'T00:00:00');
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const diffDays = Math.round((d - today) / 86400000);
+      if (diffDays === 0) return 'Today';
+      if (diffDays === 1) return 'Tomorrow';
+      const day = d.getDay();
+      const monday = new Date(d);
+      monday.setDate(d.getDate() - ((day + 6) % 7));
+      return 'Week of ' + monday.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    }
+
+    function formatDateStr(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function addMinutesToTime(timeStr, minutes) {
+      const [h, m] = timeStr.split(':').map(Number);
+      const total = h * 60 + m + minutes;
+      const hh = Math.floor((total % (24 * 60)) / 60);
+      const mm = total % 60;
+      return String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+    }
+
+    function slugify(name) {
+      return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    }
+
+    // ---------------- CloudKit helpers ----------------
+
+    function ckRecord(recordType, recordName, fieldsObj, changeTag) {
+      const fields = {};
+      Object.keys(fieldsObj).forEach(k => { fields[k] = { value: fieldsObj[k] }; });
+      const rec = { recordType, fields };
+      if (recordName) rec.recordName = recordName;
+      if (changeTag) rec.recordChangeTag = changeTag;
+      return rec;
+    }
+
+    function fieldVal(record, name, fallback) {
+      return record.fields && record.fields[name] ? record.fields[name].value : fallback;
+    }
+
+    async function lookupOne(recordName) {
+      try {
+        const resp = await publicDB.lookupRecords({ recordNames: [recordName] });
+        const rec = resp.records && resp.records[0];
+        if (rec && rec.recordName && !rec.reason) return rec;
+        return null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    async function withRetry(fn, retries) {
+      retries = retries || 3;
+      let lastErr;
+      for (let i = 0; i < retries; i++) {
+        try {
+          return await fn();
+        } catch (err) {
+          lastErr = err;
+          const code = (err && (err.serverErrorCode || err.ckErrorCode || '')).toString().toUpperCase();
+          if (code.includes('CONFLICT') && i < retries - 1) continue;
+          throw err;
+        }
+      }
+      throw lastErr;
+    }
+
+    // ---------------- Data setup ----------------
+
+    // Read-only: works for everyone, signed in or not (World role has Read).
+    async function loadConfig() {
+      const rec = await lookupOne('settings');
+      if (rec) {
+        config = {
+          startTime: fieldVal(rec, 'startTime', DEFAULT_CONFIG.startTime),
+          durationMinutes: fieldVal(rec, 'durationMinutes', DEFAULT_CONFIG.durationMinutes),
+          mentorsPerShift: fieldVal(rec, 'mentorsPerShift', DEFAULT_CONFIG.mentorsPerShift),
+          days: fieldVal(rec, 'days', DEFAULT_CONFIG.days),
+          weeksAhead: fieldVal(rec, 'weeksAhead', DEFAULT_CONFIG.weeksAhead)
+        };
+      } else {
+        config = DEFAULT_CONFIG;
+      }
+    }
+
+    // Write: only works once signed in (Create/Write on Config/Shift require
+    // the _icloud role). Creates the Config record the very first time any
+    // mentor signs in, if it doesn't exist yet.
+    async function ensureConfigExists() {
+      const rec = await lookupOne('settings');
+      if (!rec) {
+        try {
+          await publicDB.saveRecords([ckRecord('Config', 'settings', DEFAULT_CONFIG)]);
+          config = DEFAULT_CONFIG;
+        } catch (e) {
+          console.warn('Could not create Config record (may already exist):', e);
+        }
+      }
+    }
+
+    async function ensureShiftsGenerated() {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const endTime = addMinutesToTime(config.startTime, config.durationMinutes);
+
+      const candidateIds = [];
+      const candidateData = {};
+      for (let i = 0; i < config.weeksAhead * 7; i++) {
+        const d = new Date(today);
+        d.setDate(d.getDate() + i);
+        const dayCode = DAY_CODES[d.getDay()];
+        if (config.days.indexOf(dayCode) === -1) continue;
+
+        const dateStr = formatDateStr(d);
+        const shiftId = `${dateStr}_${config.startTime.replace(':', '')}`;
+        candidateIds.push(shiftId);
+        candidateData[shiftId] = { date: dateStr, startTime: config.startTime, endTime, topic: '', signups: [] };
+      }
+
+      if (candidateIds.length === 0) return;
+
+      let existingIds = new Set();
+      try {
+        const resp = await publicDB.lookupRecords({ recordNames: candidateIds });
+        (resp.records || []).forEach(r => {
+          if (r && r.recordName && !r.reason) existingIds.add(r.recordName);
+        });
+      } catch (e) {
+        // If the batch lookup fails outright, fall back to treating all as missing;
+        // saveRecords below is safe to re-run (it just re-writes the same defaults).
+      }
+
+      const missing = candidateIds.filter(id => !existingIds.has(id));
+      if (missing.length === 0) return;
+
+      const newRecords = missing.map(id => ckRecord('Shift', id, candidateData[id]));
+      try {
+        await publicDB.saveRecords(newRecords);
+      } catch (e) {
+        console.warn('Shift generation save failed (may partially exist already):', e);
+      }
+    }
+
+    async function refreshMentors() {
+      try {
+        const resp = await publicDB.performQuery({ recordType: 'Mentor' });
+        mentors = (resp.records || []).map(r => fieldVal(r, 'name', null)).filter(Boolean).sort();
+        populateMentorSelect();
+        render();
+        touchLastSynced();
+      } catch (err) {
+        console.error('refreshMentors failed', err);
+      }
+    }
+
+    async function refreshShifts() {
+      try {
+        const todayStr = formatDateStr(new Date());
+        const resp = await publicDB.performQuery({
+          recordType: 'Shift',
+          filterBy: [{ fieldName: 'date', comparator: 'GREATER_THAN_OR_EQUALS', fieldValue: { value: todayStr } }],
+          sortBy: [{ fieldName: 'date', ascending: true }, { fieldName: 'startTime', ascending: true }]
+        });
+        shifts = (resp.records || []).map(r => {
+          const signedUp = fieldVal(r, 'signups', []) || [];
+          return {
+            id: r.recordName,
+            changeTag: r.recordChangeTag,
+            date: fieldVal(r, 'date', ''),
+            startTime: fieldVal(r, 'startTime', ''),
+            endTime: fieldVal(r, 'endTime', ''),
+            topic: fieldVal(r, 'topic', ''),
+            signedUp,
+            openSlots: Math.max(0, config.mentorsPerShift - signedUp.length)
+          };
+        });
+        render();
+        touchLastSynced();
+      } catch (err) {
+        console.error('refreshShifts failed', err);
+        document.getElementById('content').innerHTML =
+          '<div class="empty-state">Couldn\'t load shifts from CloudKit. Check the container/token in index.html and your Security Roles. (' + (err && err.reason ? err.reason : err) + ')</div>';
+      }
+    }
+
+    function touchLastSynced() {
+      document.getElementById('lastSynced').textContent = 'Last synced ' + new Date().toLocaleTimeString();
+    }
+
+    // ---------------- Mutations ----------------
+
+    window.doSignUp = async function (shiftId) {
+      if (!isSignedIn) { showToast('Sign in with your Apple ID first (top of the page).', true); return; }
+      if (!currentMentor) { showToast('Select your name first.', true); return; }
+      try {
+        await withRetry(async () => {
+          const rec = await lookupOne(shiftId);
+          if (!rec) throw new Error('Shift not found.');
+          const signedUp = fieldVal(rec, 'signups', []) || [];
+          if (signedUp.includes(currentMentor)) throw new Error('You are already signed up for this shift.');
+          if (signedUp.length >= config.mentorsPerShift) throw new Error('That shift just filled up. Please pick another.');
+          rec.fields.signups = { value: [...signedUp, currentMentor] };
+          await publicDB.saveRecords([rec]);
+        });
+        showToast('Signed up!');
+        await refreshShifts();
+      } catch (err) {
+        showToast(err.message || String(err), true);
+      }
+    };
+
+    window.doCancel = async function (shiftId) {
+      if (!isSignedIn) { showToast('Sign in with your Apple ID first (top of the page).', true); return; }
+      try {
+        await withRetry(async () => {
+          const rec = await lookupOne(shiftId);
+          if (!rec) throw new Error('Shift not found.');
+          const signedUp = fieldVal(rec, 'signups', []) || [];
+          rec.fields.signups = { value: signedUp.filter(n => n !== currentMentor) };
+          await publicDB.saveRecords([rec]);
+        });
+        showToast('Removed from shift.');
+        await refreshShifts();
+      } catch (err) {
+        showToast(err.message || String(err), true);
+      }
+    };
+
+    window.doSetTopic = async function (shiftId, topic) {
+      if (!isSignedIn) { showToast('Sign in with your Apple ID first (top of the page).', true); return; }
+      try {
+        await withRetry(async () => {
+          const rec = await lookupOne(shiftId);
+          if (!rec) throw new Error('Shift not found.');
+          rec.fields.topic = { value: topic };
+          await publicDB.saveRecords([rec]);
+        });
+        showToast('Topic saved.');
+      } catch (err) {
+        showToast(err.message || String(err), true);
+      }
+    };
+
+    async function addMentor(name) {
+      if (!isSignedIn) throw new Error('Sign in with your Apple ID first (top of the page).');
+      name = name.trim();
+      if (!name) throw new Error('Enter a name.');
+      if (mentors.some(m => m.toLowerCase() === name.toLowerCase())) {
+        throw new Error('That name is already on the list.');
+      }
+      const recordName = slugify(name);
+      const existing = await lookupOne(recordName);
+      if (existing) throw new Error('That name is already on the list.');
+      await publicDB.saveRecords([ckRecord('Mentor', recordName, { name })]);
+    }
+
+    // ---------------- Rendering ----------------
+
+    function populateMentorSelect() {
+      const sel = document.getElementById('mentorSelect');
+      sel.innerHTML = '<option value="">Select your name…</option>' +
+        mentors.map(m => `<option value="${m}">${m}</option>`).join('');
+      if (currentMentor && mentors.indexOf(currentMentor) !== -1) {
+        sel.value = currentMentor;
+      } else {
+        currentMentor = '';
+      }
+    }
+
+    function render() {
+      const content = document.getElementById('content');
+      if (shifts.length === 0) {
+        content.innerHTML = '<div class="empty-state">No upcoming shifts yet — they\'ll generate automatically. Refresh in a moment.</div>';
+        return;
+      }
+
+      const mine = shifts.filter(s => currentMentor && s.signedUp.indexOf(currentMentor) !== -1);
+      const banner = document.getElementById('myShiftsBanner');
+      if (currentMentor && mine.length > 0) {
+        banner.className = 'my-shifts-banner show';
+        banner.innerHTML = '<strong>You\'re signed up for ' + mine.length + ' shift' + (mine.length > 1 ? 's' : '') + ':</strong> ' +
+          mine.map(s => fmtDate(s.date) + ' ' + fmtTime(s.startTime)).join(' · ');
+      } else {
+        banner.className = 'my-shifts-banner';
+      }
+
+      let html = '';
+      let lastWeekLabel = null;
+      shifts.forEach(s => {
+        const wl = weekLabelFor(s.date);
+        if (wl !== lastWeekLabel) {
+          html += `<div class="week-label">${wl}</div>`;
+          lastWeekLabel = wl;
+        }
+
+        const isMine = currentMentor && s.signedUp.indexOf(currentMentor) !== -1;
+        const isFull = s.openSlots === 0;
+
+        let slotsHtml = s.signedUp.map(name => {
+          const cls = name === currentMentor ? 'slot me' : 'slot';
+          return `<span class="${cls}">${escapeHtml(name)}</span>`;
+        }).join('');
+        for (let i = 0; i < s.openSlots; i++) {
+          slotsHtml += `<span class="slot open">Open</span>`;
+        }
+
+        let actionHtml = '';
+        if (!currentMentor) {
+          actionHtml = `<button class="btn-secondary" disabled>Select your name</button>`;
+        } else if (isMine) {
+          actionHtml = `<button class="btn-danger" onclick="doCancel('${s.id}')">Cancel my spot</button>`;
+        } else if (isFull) {
+          actionHtml = `<button class="btn-secondary" disabled>Full</button>`;
+        } else {
+          actionHtml = `<button class="btn-primary" onclick="doSignUp('${s.id}')">Sign up</button>`;
+        }
+
+        html += `
+          <div class="shift-card ${isMine ? 'mine' : ''} ${isFull ? 'full' : ''}">
+            <div class="shift-info">
+              <div class="shift-date">${fmtDate(s.date)}</div>
+              <div class="shift-time">${fmtTime(s.startTime)} – ${fmtTime(s.endTime)}</div>
+              <div class="slots">${slotsHtml}</div>
+              <div class="topic-row">
+                <span class="topic-label">🗳️ This or that:</span>
+                <input type="text" placeholder="e.g. Tabs vs Spaces" value="${escapeHtml(s.topic || '')}"
+                  onchange="doSetTopic('${s.id}', this.value)">
+              </div>
+            </div>
+            <div class="shift-actions">${actionHtml}</div>
+          </div>
+        `;
+      });
+
+      content.innerHTML = html;
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    document.getElementById('mentorSelect').addEventListener('change', function () {
+      currentMentor = this.value;
+      localStorage.setItem('doorGreetingMentor', currentMentor);
+      render();
+    });
+
+    document.getElementById('addMentorLink').addEventListener('click', async function () {
+      const name = prompt('Enter your full name as it should appear:');
+      if (!name) return;
+      try {
+        await addMentor(name);
+        showToast('Added! Select your name from the list.');
+        await refreshMentors();
+      } catch (err) {
+        showToast(err.message, true);
+      }
+    });
+
+    document.getElementById('refreshBtn').addEventListener('click', async function () {
+      await Promise.all([refreshMentors(), refreshShifts()]);
+      showToast('Refreshed.');
+    });
+
+    // ---------------- Auth ----------------
+
+    function updateAuthUI() {
+      const btn = document.getElementById('signInBtn');
+      const status = document.getElementById('authStatus');
+      if (isSignedIn) {
+        btn.style.display = 'none';
+        status.textContent = '✓ Signed in with Apple ID — you can sign up for shifts.';
+      } else {
+        btn.style.display = 'inline-block';
+        status.textContent = 'Sign in to sign up for a shift (viewing doesn\'t require it).';
+      }
+      render();
+    }
+
+    function gotoAuthenticatedState() {
+      isSignedIn = true;
+      updateAuthUI();
+      // Now that we can write, make sure Config exists and upcoming shifts
+      // are generated, then refresh the view with anything new.
+      ensureConfigExists()
+        .then(ensureShiftsGenerated)
+        .then(refreshShifts)
+        .catch(err => console.warn('Post-sign-in setup failed:', err));
+      container.whenUserSignsOut().then(gotoUnauthenticatedState);
+    }
+
+    function gotoUnauthenticatedState() {
+      isSignedIn = false;
+      updateAuthUI();
+    }
+
+    document.getElementById('signInBtn').addEventListener('click', function () {
+      container.whenUserSignsIn()
+        .then(gotoAuthenticatedState)
+        .catch(err => showToast('Sign-in failed or was cancelled.', true));
+    });
+
+    // ---------------- Boot ----------------
+
+    async function boot() {
+      if (CLOUDKIT_CONTAINER_ID === 'iCloud.YOUR_CONTAINER_ID') {
+        document.getElementById('configWarning').style.display = 'block';
+        document.getElementById('configWarning').textContent =
+          'This app needs your CloudKit container ID and API token pasted into index.html before it will work. See DEPLOY_INSTRUCTIONS.md.';
+        document.getElementById('content').innerHTML = '';
+        return;
+      }
+
+      CloudKit.configure({
+        containers: [{
+          containerIdentifier: CLOUDKIT_CONTAINER_ID,
+          apiTokenAuth: { apiToken: CLOUDKIT_API_TOKEN, persist: true },
+          environment: CLOUDKIT_ENVIRONMENT
+        }]
+      });
+      container = CloudKit.getDefaultContainer();
+      publicDB = container.publicCloudDatabase;
+
+      container.setUpAuth().then(function (userIdentity) {
+        if (userIdentity) {
+          gotoAuthenticatedState();
+        } else {
+          gotoUnauthenticatedState();
+        }
+      }).catch(function (err) {
+        console.warn('Auth setup failed:', err);
+        gotoUnauthenticatedState();
+      });
+
+      // Reading works for everyone regardless of sign-in status.
+      await loadConfig();
+      await refreshMentors();
+      await refreshShifts();
+
+      setInterval(refreshMentors, POLL_MS);
+      setInterval(refreshShifts, POLL_MS);
+    }
+
+    boot();
+  </script>
+</body>
+</html>
