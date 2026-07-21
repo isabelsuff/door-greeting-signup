@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -398,13 +399,17 @@
 
     async function refreshShifts() {
       try {
+        // CloudKit doesn't support GREATER_THAN_OR_EQUALS filtering on String
+        // fields, so we fetch all Shift records (sorted) and filter out past
+        // dates client-side instead.
         const todayStr = formatDateStr(new Date());
         const resp = await publicDB.performQuery({
           recordType: 'Shift',
-          filterBy: [{ fieldName: 'date', comparator: 'GREATER_THAN_OR_EQUALS', fieldValue: { value: todayStr } }],
           sortBy: [{ fieldName: 'date', ascending: true }, { fieldName: 'startTime', ascending: true }]
         });
-        shifts = (resp.records || []).map(r => {
+        shifts = (resp.records || [])
+          .filter(r => fieldVal(r, 'date', '') >= todayStr)
+          .map(r => {
           const signedUp = fieldVal(r, 'signups', []) || [];
           return {
             id: r.recordName,
